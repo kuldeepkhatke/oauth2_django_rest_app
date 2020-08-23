@@ -1,0 +1,122 @@
+<style>
+th, td {
+    border: 1px solid black;
+}
+</style>
+<h2 id="headding"></h2>
+<button id="logout">Logout</button>
+<hr>
+<div id="task_create_form" style="display: none;">
+    {% csrf_token %}
+    {% for field in form %}
+        <p>
+        {{ field.label_tag }}<br>
+        {{ field }}
+        {% if field.help_text %}
+            <small style="color: grey">{{ field.help_text }}</small>
+        {% endif %}
+        {% for error in field.errors %}
+            <p style="color: red">{{ error }}</p>
+        {% endfor %}
+        </p>
+    {% endfor %}
+    <button id="create_task_btn">Create Task</button>
+    <hr>
+</div>
+
+<div class="tasks">
+    <table id="tasks_table">
+        <tr>
+            <th>Id</th>
+            <th>Task Name</th>
+            <th>Task Description</th>
+            <th class="action" style="display: none;">Actions</th>
+        </tr>
+        <tbody id="tasks_table_tbody">
+        </tbody>
+    </table>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    if(localStorage.getItem('username')){
+
+        $("#headding").text("Welcome "+localStorage.getItem('username'))
+        $("#id_created_by").val(localStorage.getItem('user_id'))
+        $("#id_created_by").parent('p').css('display','None')
+        var s = ""
+        $.ajax( {
+            url:'http://localhost:7000/task_api/',
+            beforeSend: function (xhr, settings) {
+                xhr.setRequestHeader ("Authorization", localStorage.getItem('token_type') + " " + localStorage.getItem('access_token'));
+            },
+            type: 'GET',
+            success:function(data) {                
+                console.log(data)
+                $.each(data, function( index, value ) {
+                    if(localStorage.getItem('is_owner') == "true"){
+                        s += "<tr><td>"+value.id+"</td><td>"+value.name+"</td><td>"+value.description+"</td><td class='action' style='display: block;'><button id='"+value.id+"' onclick='delete_task("+value.id+")'>Delete</button></td></tr>"
+                    } else{
+                        s += "<tr><td>"+value.id+"</td><td>"+value.name+"</td><td>"+value.description+"</td><td class='action' style='display: none;'><button id='"+value.id+"' onclick='delete_task("+value.id+")'>Delete</button></td></tr>"
+                    }
+                });
+                $("#tasks_table_tbody").html(s)
+                // window.location.reload()
+            }
+        });
+        
+        if(localStorage.getItem('is_owner') == "true"){
+            $("#task_create_form").css("display","block")
+            $(".action").css("display","block")
+        } 
+    } else{
+        window.location.href = "/login"
+    }
+    
+    $("#create_task_btn").click(function(){
+        data = {
+            'name': $("#id_name").val(),
+            'description': $("#id_description").val(),
+            'created_by': $("#id_created_by").val(),
+            'assigned_to': $("#id_assigned_to").val(),
+        }
+        $.ajax( {
+            url:'http://localhost:7000/task_api/',
+            contentType: "application/json",
+            dataType: "json",
+            type: 'POST',
+            beforeSend: function (xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+                xhr.setRequestHeader ("Authorization", localStorage.getItem('token_type') + " " + localStorage.getItem('access_token'));
+            },
+            data: JSON.stringify(data),
+            success:function(data) {                
+                console.log(data)
+                window.location.reload()
+            }
+        });
+    })
+
+    
+});
+function delete_task(id){
+    $.ajax( {
+        url:'http://localhost:7000/task_api/'+id+'/',
+        type: 'DELETE',
+        beforeSend: function (xhr, settings) {
+            xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+            xhr.setRequestHeader ("Authorization", localStorage.getItem('token_type') + " " + localStorage.getItem('access_token'));
+        },
+        success:function(data) {                
+            console.log(data)
+            window.location.reload()
+        }
+    });
+}
+
+$("#logout").click(function(){
+    localStorage.clear();
+    window.location.href = '/login'
+})
+    
+</script>

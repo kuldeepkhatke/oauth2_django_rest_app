@@ -1,0 +1,45 @@
+<h2>Register</h2>
+{% for field in form %}
+    <p>
+    {{ field.label_tag }}<br>
+    {{ field }}
+    {% if field.help_text %}
+        <small style="color: grey">{{ field.help_text }}</small>
+    {% endif %}
+    {% for error in field.errors %}
+        <p style="color: red">{{ error }}</p>
+    {% endfor %}
+    </p>
+{% endfor %}
+<button id="register_btn">Register</button>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+    $("#register_btn").click(function(){
+        var data = {
+                'username':$('#id_username').val(),
+                'email':$('#id_email').val(),
+                'password1':$('#id_password1').val(),
+                'password2':$('#id_password1').val(),
+            }
+        $.ajax( {
+            url:'http://localhost:7000/register_api/',
+            // dataType:JSON,
+            type: 'POST',
+            beforeSend: function (xhr, settings) {
+                xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+            },
+            data: data,
+            success:function(data) {
+                
+                console.log(data)
+
+                window.location.href = "/login/"
+            }
+        });
+    })
+    $("#id_created_by").parent('p').css('display','None')
+});
+    
+</script>
